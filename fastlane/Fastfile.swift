@@ -251,12 +251,15 @@ class Fastfile: LaneFile {
             )
         }
 
+        let derivedDataPath = options["derivedDataPath"]?.trimOption() ?? "\(NSTemporaryDirectory())DerivedData"
+        let xcargs = "-skipMacroValidation -derivedDataPath \(derivedDataPath)"
+
         buildApp(
             scheme: .userDefined(scheme),
             exportMethod: .userDefined("development"),
             skipArchive: .userDefined(!hasSigning),
             skipCodesigning: .userDefined(!hasSigning),
-            xcargs: .userDefined("-skipMacroValidation"),
+            xcargs: .userDefined(xcargs),
             skipProfileDetection: true
         )
     }
