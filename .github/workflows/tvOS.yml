@@ -1,38 +1,27 @@
-name: "Build Artifacts 📦"
-
+name: "Build Unsigned Artifacts ✈️"
 on:
-  schedule:
-    # 1st of every month at 17:00 UTC
-    - cron: '0 17 1 * *'
+  workflow_dispatch: # Allows you to manually trigger the build from the GitHub Actions tab
   repository_dispatch:
-    types: [testflight]
-  workflow_dispatch:
+    types: [build-unsigned]
 
 jobs:
   build:
-    name: "Build and Archive"
-    runs-on: macos-15
+    name: "Build iOS & tvOS Apps"
+    runs-on: macos-15 # GitHub hosted macOS runner
     env:
-      XCODE_VERSION: "26.3"
       DEFAULT_IOS_SCHEME: "Swiftfin"
       DEFAULT_TVOS_SCHEME: "Swiftfin tvOS"
-
     steps:
-    - name: Checkout
+    - name: Checkout Repository
       uses: actions/checkout@v4
       with:
         ref: ${{ github.event.client_payload.ref || 'main' }}
         fetch-depth: 0
 
-    - name: git Checkout (Custom Commit)
+    - name: git Checkout
       if: ${{ github.event.client_payload.hasCheckoutCommit }}
-      run: git checkout ${{ github.event.client_payload.commitSHA }}
-
-    - name: Setup Ruby
-      uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: '3.3'
-        bundler-cache: true
+      run: |
+        git checkout ${{ github.event.client_payload.commitSHA }}
 
     - name: Install SwiftGen
       run: brew install swiftgen
@@ -40,57 +29,52 @@ jobs:
     - name: Update Carthage
       run: carthage update --use-xcframeworks --cache-builds
 
-    - name: Generate Changelog
-      id: changelog
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build iOS App (Unsigned)
       run: |
-        RELEASE_DATE=$(gh release view --json publishedAt -q '.publishedAt' 2>/dev/null || echo "")
-        if [ -n "$RELEASE_DATE" ]; then
-          LOG=$(gh pr list --state merged --label "release highlight" --search "merged:>=$RELEASE_DATE" --json title --jq '.[].title' | sed 's/^/- /')
-        fi
-        
-        if [ -z "$LOG" ]; then
-          LOG="General performance changes, fixes, and localization changes."
-        fi
+        xcodebuild clean build \
+          -scheme "$DEFAULT_IOS_SCHEME" \
+          -destination "generic/platform=iOS" \
+          -configuration Release \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          CONFIGURATION_BUILD_DIR="$RUNNER_TEMP/build/ios"
 
-        {
-          echo "changelog<<CHANGELOG_EOF"
-          echo "$LOG"
-          echo "CHANGELOG_EOF"
-        } >> $GITHUB_OUTPUT
-
-    - name: Build Schemes (Generic Signing)
+    - name: Package iOS IPA
       run: |
-        # Resolve which schemes to build
-        if [ -n "${{ github.event.client_payload.scheme }}" ]; then
-          SCHEMES=("${{ github.event.client_payload.scheme }}")
-        else
-          SCHEMES=("$DEFAULT_IOS_SCHEME" "$DEFAULT_TVOS_SCHEME")
-        fi
+        cd $RUNNER_TEMP/build/ios
+        mkdir Payload
+        mv *.app Payload/
+        zip -r Swiftfin-iOS.ipa Payload
 
-        for scheme in "${SCHEMES[@]}"; do
-          echo "🔨 Building scheme: $scheme"
-          
-          # -skipMacroValidation bypasses the macro trust prompt
-          # CODE_SIGNING_IDENTITY="-" applies generic ad-hoc signing
-          xcodebuild build \
-            -scheme "$scheme" \
-            -configuration Release \
-            -derivedDataPath "build_output/$scheme" \
-            -skipMacroValidation \
-            CODE_SIGNING_ALLOWED=YES \
-            CODE_SIGNING_REQUIRED=YES \
-            CODE_SIGNING_IDENTITY="-" \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES
-        done
+    - name: Build tvOS App (Unsigned)
+      run: |
+        xcodebuild clean build \
+          -scheme "$DEFAULT_TVOS_SCHEME" \
+          -destination "generic/platform=tvOS" \
+          -configuration Release \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          CONFIGURATION_BUILD_DIR="$RUNNER_TEMP/build/tvos"
 
-    - name: Upload Build Artifacts
+    - name: Package tvOS IPA
+      run: |
+        cd $RUNNER_TEMP/build/tvos
+        mkdir Payload
+        mv *.app Payload/
+        zip -r Swiftfin-tvOS.ipa Payload
+
+    - name: Upload iOS Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Build-Output-${{ github.run_id }}
-        path: build_output/
+        name: Swiftfin-iOS-IPA
+        path: ${{ runner.temp }}/build/ios/Swiftfin-iOS.ipa
         retention-days: 7
 
-    - name: Save Changelog as Artifact
-      run: echo "${{ steps.changelog.outputs.changelog }}" > build_output/changelog.txt
+    - name: Upload tvOS Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Swiftfin-tvOS-IPA
+        path: ${{ runner.temp }}/build/tvos/Swiftfin-tvOS.ipa
+        retention-days: 7
