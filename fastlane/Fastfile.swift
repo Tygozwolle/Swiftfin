@@ -227,7 +227,11 @@ class Fastfile: LaneFile {
             xcodes(version: xcodeVersion)
         }
 
-        if let codeSign64 = options["codeSign64"]?.trimOption(),
+        let hasSigning = options["codeSign64"]?.trimOption() != nil &&
+                         options["profileName64"]?.trimOption() != nil
+
+        if hasSigning,
+           let codeSign64 = options["codeSign64"]?.trimOption(),
            let profileName64 = options["profileName64"]?.trimOption() {
 
             guard let decodedCodeSignIdentity = decodeBase64(encoded: codeSign64) else {
@@ -250,7 +254,8 @@ class Fastfile: LaneFile {
         buildApp(
             scheme: .userDefined(scheme),
             exportMethod: .userDefined("development"),
-            skipArchive: .userDefined(false),
+            skipArchive: .userDefined(!hasSigning),
+            skipCodesigning: .userDefined(!hasSigning),
             xcargs: .userDefined("-skipMacroValidation"),
             skipProfileDetection: true
         )
