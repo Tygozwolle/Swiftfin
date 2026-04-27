@@ -14,14 +14,19 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Install Dependencies
-      run: |
-        brew install swiftgen
+ #   - name: Install Dependencies
+#      run: |
+     #   brew install swiftgen
         # Swiftfin usually handles SPM dependencies automatically in Xcode 15+
         # If Carthage is strictly required, uncomment the next line:
         # carthage update --use-xcframeworks --cache-builds
+    - name: Install Dependencies
+      run: |
+        brew install swiftgen
+        brew install carthage
+        # This is the missing piece:
+        carthage bootstrap --platform tvos --use-xcframeworks --no-use-binaries --cache-builds
 
-  
     - name: Build Unsigned App
       run: |
         xcodebuild build \
@@ -36,14 +41,8 @@ jobs:
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGN_ENTITLEMENTS=""
-
-    - name: Package as IPA
-      run: |
-        mkdir -p Payload
-        # This finds the .app file in the specific build folder we created above
-        cp -R ./derived_data/Build/Products/Release-appletvos/*.app ./Payload/
-        zip -r Swiftfin-Unsigned.ipa Payload
-        
+  
+  
     - name: Upload to GitHub Artifacts
       uses: actions/upload-artifact@v4
       with:
