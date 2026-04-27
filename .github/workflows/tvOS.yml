@@ -2,9 +2,9 @@ name: "Sideload Build 📦"
 
 on:
   schedule:
-    # Runs at 17:00 UTC on the 1st of every month
+    # Runs automatically on the 1st of every month
     - cron: '0 17 1 * *'
-  workflow_dispatch: # Allows you to trigger the build manually from the Actions tab
+  workflow_dispatch: # Allows you to run this manually from the Actions tab
 
 jobs:
   build:
@@ -21,11 +21,11 @@ jobs:
     - name: Fetch TVVLCKit Manually
       run: |
         mkdir -p Carthage/Build
-        # Downloads the stable 3.7.0 binary for tvOS to prevent Carthage timeouts
+        # Manually downloading the VLC engine to avoid the Carthage timeouts seen in logs
         curl -L https://videolan.mirror.it.fkd.jp/testing/VLCKit-3.7.0/TVVLCKit-3.7.0.xcframework.zip -o TVVLCKit.zip
         unzip -q TVVLCKit.zip -d Carthage/Build/
         rm TVVLCKit.zip
-        # Ensures the framework is in the path required by the project
+        # Verifies the framework exists at the path required by the xcodebuild command
         ls -d Carthage/Build/TVVLCKit.xcframework
 
     - name: Build Unsigned App
@@ -46,7 +46,7 @@ jobs:
     - name: Package as IPA
       run: |
         mkdir -p Payload
-        # Moves the compiled .app into the Payload folder for sideloading
+        # Moves the compiled .app into the standard IPA structure
         cp -R ./derived_data/Build/Products/Release-appletvos/*.app ./Payload/
         zip -r Swiftfin-Unsigned.ipa Payload
         
