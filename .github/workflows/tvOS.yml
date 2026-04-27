@@ -60,7 +60,7 @@ jobs:
           echo "CHANGELOG_EOF"
         } >> $GITHUB_OUTPUT
 
-    - name: Build Schemes
+    - name: Build Schemes (Generic Signing)
       run: |
         # Resolve which schemes to build
         if [ -n "${{ github.event.client_payload.scheme }}" ]; then
@@ -72,16 +72,17 @@ jobs:
         for scheme in "${SCHEMES[@]}"; do
           echo "🔨 Building scheme: $scheme"
           
-          # Added -skipMacroValidation to bypass the macro trust prompt in CI
+          # -skipMacroValidation bypasses the macro trust prompt
+          # CODE_SIGNING_IDENTITY="-" applies generic ad-hoc signing
           xcodebuild build \
             -scheme "$scheme" \
             -configuration Release \
             -derivedDataPath "build_output/$scheme" \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_IDENTITY="" \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES \
-            -skipMacroValidation
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGNING_REQUIRED=YES \
+            CODE_SIGNING_IDENTITY="-" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
         done
 
     - name: Upload Build Artifacts
