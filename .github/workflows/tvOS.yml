@@ -1,72 +1,94 @@
-name: "Sideload Build 📦"
+name: "Build Artifacts 📦"
 
 on:
   schedule:
-    # 1st of every month at 12pm EST / 1pm EDT (17:00 UTC)
+    # 1st of every month at 17:00 UTC
     - cron: '0 17 1 * *'
   repository_dispatch:
-    types: [sideload]
+    types: [testflight]
   workflow_dispatch:
 
 jobs:
   build:
-    name: "Build Unsigned Apple TV IPA"
+    name: "Build and Archive"
     runs-on: macos-15
     env:
       XCODE_VERSION: "26.3"
+      DEFAULT_IOS_SCHEME: "Swiftfin"
       DEFAULT_TVOS_SCHEME: "Swiftfin tvOS"
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v6
+      uses: actions/checkout@v4
       with:
         ref: ${{ github.event.client_payload.ref || 'main' }}
-        token: ${{ secrets.GITHUB_TOKEN }}
         fetch-depth: 0
 
-    - name: git Checkout
+    - name: git Checkout (Custom Commit)
       if: ${{ github.event.client_payload.hasCheckoutCommit }}
-      run: |
-        git checkout ${{ github.event.client_payload.commitSHA }}
+      run: git checkout ${{ github.event.client_payload.commitSHA }}
 
-    - name: Install Tools
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3'
+        bundler-cache: true
+
+    - name: Install SwiftGen
       run: brew install swiftgen
 
-    - name: Fetch TVVLCKit Manually
-      run: |
-        mkdir -p Carthage/Build
-        # Using a reliable VLC link to fix the Carthage download issues seen in logs
-        curl -L -f "https://download.videolan.org/pub/videolan/testing/VLCKit-3.7.0/TVVLCKit-3.7.0.xcframework.zip" -o TVVLCKit.zip
-        unzip -q TVVLCKit.zip -d Carthage/Build/
-        rm TVVLCKit.zip
-        # Satisfies the project's dependency check
-        ls -d Carthage/Build/TVVLCKit.xcframework
+    - name: Update Carthage
+      run: carthage update --use-xcframeworks --cache-builds
 
-    - name: Build Unsigned App
+    - name: Generate Changelog
+      id: changelog
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        xcodebuild build \
-          -project Swiftfin.xcodeproj \
-          -scheme "$DEFAULT_TVOS_SCHEME" \
-          -configuration Release \
-          -destination "generic/platform=tvOS" \
-          -derivedDataPath ./derived_data \
-          -skipMacroValidation \
-          -skipPackagePluginValidation \
-          CODE_SIGNING_ALLOWED=NO \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGN_ENTITLEMENTS=""
-
-    - name: Package as IPA
-      run: |
-        mkdir -p Payload
-        # Moves the compiled app to the standard IPA structure
-        cp -R ./derived_data/Build/Products/Release-appletvos/*.app ./Payload/
-        zip -r Swiftfin-Unsigned.ipa Payload
+        RELEASE_DATE=$(gh release view --json publishedAt -q '.publishedAt' 2>/dev/null || echo "")
+        if [ -n "$RELEASE_DATE" ]; then
+          LOG=$(gh pr list --state merged --label "release highlight" --search "merged:>=$RELEASE_DATE" --json title --jq '.[].title' | sed 's/^/- /')
+        fi
         
-    - name: Upload to GitHub Artifacts
+        if [ -z "$LOG" ]; then
+          LOG="General performance changes, fixes, and localization changes."
+        fi
+
+        {
+          echo "changelog<<CHANGELOG_EOF"
+          echo "$LOG"
+          echo "CHANGELOG_EOF"
+        } >> $GITHUB_OUTPUT
+
+    - name: Build Schemes
+      run: |
+        # Resolve which schemes to build
+        if [ -n "${{ github.event.client_payload.scheme }}" ]; then
+          SCHEMES=("${{ github.event.client_payload.scheme }}")
+        else
+          SCHEMES=("$DEFAULT_IOS_SCHEME" "$DEFAULT_TVOS_SCHEME")
+        fi
+
+        for scheme in "${SCHEMES[@]}"; do
+          echo "🔨 Building scheme: $scheme"
+          
+          # Build for simulator/generic to avoid needing physical device signing
+          xcodebuild build \
+            -scheme "$scheme" \
+            -configuration Release \
+            -derivedDataPath "build_output/$scheme" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_IDENTITY="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
+        done
+
+    - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: Swiftfin-Unsigned-IPA
-        path: Swiftfin-Unsigned.ipa
+        name: Build-Output-${{ github.run_id }}
+        path: build_output/
         retention-days: 7
+
+    - name: Save Changelog as Artifact
+      run: echo "${{ steps.changelog.outputs.changelog }}" > build_output/changelog.txt
