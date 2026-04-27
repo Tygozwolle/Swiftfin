@@ -2,8 +2,9 @@ name: "Sideload Build 📦"
 
 on:
   schedule:
+    # Runs automatically on the 1st of every month
     - cron: '0 17 1 * *'
-  workflow_dispatch:
+  workflow_dispatch: # Allows you to run this manually
 
 jobs:
   build:
@@ -20,11 +21,12 @@ jobs:
     - name: Fetch TVVLCKit Manually
       run: |
         mkdir -p Carthage/Build
-        # Switched to a more stable official VideoLAN mirror to fix the DNS resolution error
-        curl -L https://download.videolan.org/pub/videolan/testing/VLCKit-3.7.0/TVVLCKit-3.7.0.xcframework.zip -o TVVLCKit.zip
+        # Using the official primary VideoLAN server to avoid mirror/DNS issues
+        # We use -f to make curl fail if the download is an error page (like 404)
+        curl -L -f "https://download.videolan.org/pub/videolan/testing/VLCKit-3.7.0/TVVLCKit-3.7.0.xcframework.zip" -o TVVLCKit.zip
         unzip -q TVVLCKit.zip -d Carthage/Build/
         rm TVVLCKit.zip
-        # Verification to ensure the build path required by the project is satisfied
+        # Verifies the framework exists at the path required by the xcodebuild command
         ls -d Carthage/Build/TVVLCKit.xcframework
 
     - name: Build Unsigned App
@@ -45,6 +47,7 @@ jobs:
     - name: Package as IPA
       run: |
         mkdir -p Payload
+        # Moves the compiled .app into the standard IPA structure
         cp -R ./derived_data/Build/Products/Release-appletvos/*.app ./Payload/
         zip -r Swiftfin-Unsigned.ipa Payload
         
@@ -53,4 +56,4 @@ jobs:
       with:
         name: Swiftfin-Unsigned-IPA
         path: Swiftfin-Unsigned.ipa
-        retention-days: 77
+        retention-days: 7
