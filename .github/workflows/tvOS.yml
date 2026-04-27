@@ -42,7 +42,8 @@ jobs:
           -derivedDataPath "$DERIVED_DATA" \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO
+          CODE_SIGNING_ALLOWED=NO \
+          OTHER_SWIFT_FLAGS="-enable-experimental-feature IsolatedDeinit"
 
     - name: Package iOS IPA
       run: |
@@ -75,7 +76,8 @@ jobs:
           -derivedDataPath "$DERIVED_DATA" \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO
+          CODE_SIGNING_ALLOWED=NO \
+          OTHER_SWIFT_FLAGS="-enable-experimental-feature IsolatedDeinit"
 
     - name: Package tvOS IPA
       run: |
