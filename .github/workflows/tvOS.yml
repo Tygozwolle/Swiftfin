@@ -38,14 +38,17 @@ jobs:
           -configuration Release \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO \
-          CONFIGURATION_BUILD_DIR="$RUNNER_TEMP/build/ios"
+          CODE_SIGNING_ALLOWED=NO 
+         # CONFIGURATION_BUILD_DIR="$RUNNER_TEMP/build/ios"
 
     - name: Package iOS IPA
       run: |
-        cd $RUNNER_TEMP/build/ios
-        mkdir Payload
-        mv *.app Payload/
+        BUILD_DIR=$(xcodebuild -scheme "$DEFAULT_IOS_SCHEME" -configuration Release -showBuildSettings | awk -F' = ' '/TARGET_BUILD_DIR/ {print $2; exit}')
+        APP_PATH="$BUILD_DIR/Swiftfin.app"
+
+        mkdir -p "$RUNNER_TEMP/ios/Payload"
+        cp -R "$APP_PATH" "$RUNNER_TEMP/ios/Payload/"
+        cd "$RUNNER_TEMP/ios"
         zip -r Swiftfin-iOS.ipa Payload
 
     - name: Build tvOS App (Unsigned)
@@ -57,14 +60,17 @@ jobs:
           -configuration Release \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO \
-          CONFIGURATION_BUILD_DIR="$RUNNER_TEMP/build/tvos"
+          CODE_SIGNING_ALLOWED=NO 
+          # CONFIGURATION_BUILD_DIR="$RUNNER_TEMP/build/tvos"
 
     - name: Package tvOS IPA
       run: |
-        cd $RUNNER_TEMP/build/tvos
-        mkdir Payload
-        mv *.app Payload/
+        BUILD_DIR=$(xcodebuild -scheme "$DEFAULT_TVOS_SCHEME" -configuration Release -showBuildSettings | awk -F' = ' '/TARGET_BUILD_DIR/ {print $2; exit}')
+        APP_PATH="$BUILD_DIR/Swiftfin.app"
+
+        mkdir -p "$RUNNER_TEMP/tvos/Payload"
+        cp -R "$APP_PATH" "$RUNNER_TEMP/tvos/Payload/"
+        cd "$RUNNER_TEMP/tvos"
         zip -r Swiftfin-tvOS.ipa Payload
 
     - name: Upload iOS Artifact
