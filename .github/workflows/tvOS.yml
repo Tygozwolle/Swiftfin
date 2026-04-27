@@ -28,6 +28,8 @@ jobs:
           -scheme "Swiftfin tvOS" \
           -archivePath ./build/Swiftfin.xcarchive \
           -configuration Release \
+          -skipMacroValidation \
+          -skipPackagePluginValidation \
           CODE_SIGNING_ALLOWED=NO \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGN_IDENTITY="" \
