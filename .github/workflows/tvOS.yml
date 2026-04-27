@@ -31,48 +31,69 @@ jobs:
 
     - name: Build iOS App (Unsigned)
       run: |
+        DERIVED_DATA="$RUNNER_TEMP/deriveddata_ios"
+        mkdir -p "$DERIVED_DATA"
         xcodebuild clean build \
           -scheme "$DEFAULT_IOS_SCHEME" \
           -destination "generic/platform=iOS" \
+          -sdk iphoneos \
           -skipMacroValidation \
           -configuration Release \
+          -derivedDataPath "$DERIVED_DATA" \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO 
-         # CONFIGURATION_BUILD_DIR="$RUNNER_TEMP/build/ios"
+          CODE_SIGNING_ALLOWED=NO
 
     - name: Package iOS IPA
       run: |
-        BUILD_DIR=$(xcodebuild -scheme "$DEFAULT_IOS_SCHEME" -configuration Release -showBuildSettings | awk -F' = ' '/TARGET_BUILD_DIR/ {print $2; exit}')
+        DERIVED_DATA="$RUNNER_TEMP/deriveddata_ios"
+        BUILD_DIR="$DERIVED_DATA/Build/Products/Release-iphoneos"
         APP_PATH="$BUILD_DIR/Swiftfin.app"
+
+        if [ ! -d "$APP_PATH" ]; then
+          echo "ERROR: app not found at $APP_PATH"
+          echo "Dumping $DERIVED_DATA/Build/Products contents:"
+          ls -la "$DERIVED_DATA/Build/Products" || true
+          exit 1
+        fi
 
         mkdir -p "$RUNNER_TEMP/ios/Payload"
         cp -R "$APP_PATH" "$RUNNER_TEMP/ios/Payload/"
         cd "$RUNNER_TEMP/ios"
-        zip -r Swiftfin-iOS.ipa Payload
+        zip -r "$RUNNER_TEMP/build/ios/Swiftfin-iOS.ipa" Payload
 
     - name: Build tvOS App (Unsigned)
       run: |
+        DERIVED_DATA="$RUNNER_TEMP/deriveddata_tvos"
+        mkdir -p "$DERIVED_DATA"
         xcodebuild clean build \
           -scheme "$DEFAULT_TVOS_SCHEME" \
           -destination "generic/platform=tvOS" \
+          -sdk appletvos \
           -skipMacroValidation \
           -configuration Release \
+          -derivedDataPath "$DERIVED_DATA" \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO 
-          # CONFIGURATION_BUILD_DIR="$RUNNER_TEMP/build/tvos"
+          CODE_SIGNING_ALLOWED=NO
 
     - name: Package tvOS IPA
       run: |
-        BUILD_DIR=$(xcodebuild -scheme "$DEFAULT_TVOS_SCHEME" -configuration Release -showBuildSettings | awk -F' = ' '/TARGET_BUILD_DIR/ {print $2; exit}')
+        DERIVED_DATA="$RUNNER_TEMP/deriveddata_tvos"
+        BUILD_DIR="$DERIVED_DATA/Build/Products/Release-appletvos"
         APP_PATH="$BUILD_DIR/Swiftfin.app"
+
+        if [ ! -d "$APP_PATH" ]; then
+          echo "ERROR: app not found at $APP_PATH"
+          echo "Dumping $DERIVED_DATA/Build/Products contents:"
+          ls -la "$DERIVED_DATA/Build/Products" || true
+          exit 1
+        fi
 
         mkdir -p "$RUNNER_TEMP/tvos/Payload"
         cp -R "$APP_PATH" "$RUNNER_TEMP/tvos/Payload/"
         cd "$RUNNER_TEMP/tvos"
-        zip -r Swiftfin-tvOS.ipa Payload
-
+        zip -r "$RUNNER_TEMP/build/tvos/Swiftfin-tvOS.ipa" Payload
     - name: Upload iOS Artifact
       uses: actions/upload-artifact@v4
       with:
