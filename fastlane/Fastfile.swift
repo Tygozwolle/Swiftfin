@@ -255,8 +255,8 @@ class Fastfile: LaneFile {
 
         buildApp(
             scheme: .userDefined(scheme),
-            derivedDataPath: derivedDataPath.map { .userDefined($0) } ?? .fastlaneDefault(nil),
             exportMethod: .userDefined("development"),
+            derivedDataPath: derivedDataPath.map { .userDefined($0) } ?? .fastlaneDefault(nil),
             skipArchive: .userDefined(!hasSigning),
             skipCodesigning: .userDefined(!hasSigning),
             xcargs: .userDefined("-skipMacroValidation"),
