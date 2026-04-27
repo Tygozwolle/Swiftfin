@@ -2,38 +2,51 @@ name: "Sideload Build 📦"
 
 on:
   schedule:
-    # Runs automatically on the 1st of every month
+    # 1st of every month at 12pm EST / 1pm EDT (17:00 UTC)
     - cron: '0 17 1 * *'
-  workflow_dispatch: # Allows you to run this manually
+  repository_dispatch:
+    types: [sideload]
+  workflow_dispatch:
 
 jobs:
   build:
     name: "Build Unsigned Apple TV IPA"
     runs-on: macos-15
+    env:
+      XCODE_VERSION: "26.3"
+      DEFAULT_TVOS_SCHEME: "Swiftfin tvOS"
+
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ github.event.client_payload.ref || 'main' }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+
+    - name: git Checkout
+      if: ${{ github.event.client_payload.hasCheckoutCommit }}
+      run: |
+        git checkout ${{ github.event.client_payload.commitSHA }}
 
     - name: Install Tools
-      run: |
-        brew install swiftgen
+      run: brew install swiftgen
 
     - name: Fetch TVVLCKit Manually
       run: |
         mkdir -p Carthage/Build
-        # Using the official primary VideoLAN server to avoid mirror/DNS issues
-        # We use -f to make curl fail if the download is an error page (like 404)
+        # Using a reliable VLC link to fix the Carthage download issues seen in logs
         curl -L -f "https://download.videolan.org/pub/videolan/testing/VLCKit-3.7.0/TVVLCKit-3.7.0.xcframework.zip" -o TVVLCKit.zip
         unzip -q TVVLCKit.zip -d Carthage/Build/
         rm TVVLCKit.zip
-        # Verifies the framework exists at the path required by the xcodebuild command
+        # Satisfies the project's dependency check
         ls -d Carthage/Build/TVVLCKit.xcframework
 
     - name: Build Unsigned App
       run: |
         xcodebuild build \
           -project Swiftfin.xcodeproj \
-          -scheme "Swiftfin tvOS" \
+          -scheme "$DEFAULT_TVOS_SCHEME" \
           -configuration Release \
           -destination "generic/platform=tvOS" \
           -derivedDataPath ./derived_data \
@@ -47,7 +60,7 @@ jobs:
     - name: Package as IPA
       run: |
         mkdir -p Payload
-        # Moves the compiled .app into the standard IPA structure
+        # Moves the compiled app to the standard IPA structure
         cp -R ./derived_data/Build/Products/Release-appletvos/*.app ./Payload/
         zip -r Swiftfin-Unsigned.ipa Payload
         
