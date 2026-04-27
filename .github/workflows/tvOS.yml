@@ -1,0 +1,46 @@
+name: "Sideload Build 📦"
+
+on:
+  schedule:
+    # 1st of every month
+    - cron: '0 17 1 * *'
+  workflow_dispatch: # Allows you to click "Run Workflow" manually
+
+jobs:
+  build:
+    name: "Build Unsigned Apple TV IPA"
+    runs-on: macos-15
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        brew install swiftgen
+        # Swiftfin usually handles SPM dependencies automatically in Xcode 15+
+        # If Carthage is strictly required, uncomment the next line:
+        # carthage update --use-xcframeworks --cache-builds
+
+    - name: Build Unsigned Archive
+      run: |
+        xcodebuild archive \
+          -project Swiftfin.xcodeproj \
+          -scheme "Swiftfin tvOS" \
+          -archivePath ./build/Swiftfin.xcarchive \
+          -configuration Release \
+          CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGN_ENTITLEMENTS=""
+
+    - name: Package as IPA
+      run: |
+        mkdir -p Payload
+        cp -R ./build/Swiftfin.xcarchive/Products/Applications/*.app ./Payload/
+        zip -r Swiftfin-Unsigned.ipa Payload
+        
+    - name: Upload to GitHub Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Swiftfin-Unsigned-IPA
+        path: Swiftfin-Unsigned.ipa
