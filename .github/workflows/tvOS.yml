@@ -72,7 +72,7 @@ jobs:
         for scheme in "${SCHEMES[@]}"; do
           echo "🔨 Building scheme: $scheme"
           
-          # Build for simulator/generic to avoid needing physical device signing
+          # Added -skipMacroValidation to bypass the macro trust prompt in CI
           xcodebuild build \
             -scheme "$scheme" \
             -configuration Release \
@@ -80,7 +80,8 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_IDENTITY="" \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            -skipMacroValidation
         done
 
     - name: Upload Build Artifacts
