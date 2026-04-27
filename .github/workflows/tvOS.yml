@@ -7,7 +7,7 @@ on:
 jobs:
   build:
     name: "Build iOS & tvOS Apps"
-    runs-on: macos-15 # GitHub hosted macOS runner
+    runs-on: macos-26 # GitHub hosted macOS runner
     env:
       DEFAULT_IOS_SCHEME: "Swiftfin"
       DEFAULT_TVOS_SCHEME: "Swiftfin tvOS"
