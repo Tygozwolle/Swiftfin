@@ -21,13 +21,15 @@ jobs:
         # If Carthage is strictly required, uncomment the next line:
         # carthage update --use-xcframeworks --cache-builds
 
-    - name: Build Unsigned Archive
+  
+    - name: Build Unsigned App
       run: |
-        xcodebuild archive \
+        xcodebuild build \
           -project Swiftfin.xcodeproj \
           -scheme "Swiftfin tvOS" \
-          -archivePath ./build/Swiftfin.xcarchive \
           -configuration Release \
+          -destination "generic/platform=tvOS" \
+          -derivedDataPath ./derived_data \
           -skipMacroValidation \
           -skipPackagePluginValidation \
           CODE_SIGNING_ALLOWED=NO \
@@ -38,7 +40,8 @@ jobs:
     - name: Package as IPA
       run: |
         mkdir -p Payload
-        cp -R ./build/Swiftfin.xcarchive/Products/Applications/*.app ./Payload/
+        # This finds the .app file in the specific build folder we created above
+        cp -R ./derived_data/Build/Products/Release-appletvos/*.app ./Payload/
         zip -r Swiftfin-Unsigned.ipa Payload
         
     - name: Upload to GitHub Artifacts
