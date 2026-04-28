@@ -22,6 +22,7 @@ jobs:
                      CODE_SIGNING_REQUIRED=NO \
                      BUILD_ACTIVE_ARCH_ONLY=NO \
                      SWIFT_MACROS_ENABLED=YES \
+                     -allowProvisioningUpdates \
                      build
 
       - name: Upload Artifact
