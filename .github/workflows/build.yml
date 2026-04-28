@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -19,7 +19,7 @@ jobs:
                      -destination 'platform=iOS Simulator,name=iPhone 16' \
                      -derivedDataPath build \
                      CODE_SIGNING_ALLOWED=NO \
-                     BUILD_ACTIVE_ARCH_ONLY=NO \
+                     CODE_SIGNING_REQUIRED=NO \
                      build
 
       - name: Upload Artifact
