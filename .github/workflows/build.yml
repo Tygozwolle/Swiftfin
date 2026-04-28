@@ -17,7 +17,7 @@ jobs:
           xcodebuild -scheme Swiftfin -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 16' -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO BUILD_ACTIVE_ARCH_ONLY=NO SWIFT_MACROS_ENABLED=1 -sdk iphonesimulator build
 
       - name: Upload Artifact
-        uses: actiont¯upload-artifact@v4
+        uses: actions/upload-artifact@v4
         with:
           name: Swiftfin-App
           path: build/Build/Products/Debug-iphonesimulator/Swiftfin.app
