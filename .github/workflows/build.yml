@@ -1,0 +1,32 @@
+name: Build Swiftfin
+
+on:
+  push:
+    branches:
+      - build-workflow
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build for Simulator
+        run: |
+          xcodebuild -scheme Swiftfin \
+                     -configuration Debug \
+                     -destination 'platform=iOS Simulator,name=iPhone 16' \
+                     -derivedDataPath build \
+                     CODE_SIGNING_ALLOWED=NO \
+                     CODE_SIGNING_REQUIRED=NO \
+                     BUILD_ACTIVE_ARCH_ONLY=NO \
+                     SWIFT_MACROS_ENABLED=YES \
+                     -sdk iphonesimulator \
+                     build
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Swiftfin-App
+          path: build/Build/Products/Debug-iphonesimulator/Swiftfin.app
