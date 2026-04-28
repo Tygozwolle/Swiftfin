@@ -17,6 +17,7 @@ jobs:
           xcodebuild -scheme Swiftfin \
                      -sdk iphonesimulator \
                      -configuration Debug \
+                     -destination 'platform=iOS Simulator,name=iPhone 16' \
                      -derivedDataPath build \
                      CODE_SIGNING_ALLOWED=NO \
                      build
