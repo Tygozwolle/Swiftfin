@@ -24,7 +24,6 @@ jobs:
                      SWIFT_MACROS_ENABLED=YES \
                      -allowProvisioningUpdates \
                      -sdk iphonesimulator \
-                     -enableConcurrentBuild \
                      build
 
       - name: Upload Artifact
