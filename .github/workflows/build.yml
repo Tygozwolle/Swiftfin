@@ -20,6 +20,7 @@ jobs:
                      -derivedDataPath build \
                      CODE_SIGNING_ALLOWED=NO \
                      CODE_SIGNING_REQUIRED=NO \
+                     SWIFT_MACROS_ENABLED=YES \
                      build
 
       - name: Upload Artifact
