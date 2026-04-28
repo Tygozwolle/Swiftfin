@@ -1,0 +1,59 @@
+name: "Build Swiftfin tvOS Artifact"
+
+on:
+  workflow_dispatch: # Allows manual trigger from the Actions tab
+
+jobs:
+  build-tvos:
+    name: "Build tvOS App"
+    runs-on: macos-15
+    env:
+      DEFAULT_TVOS_SCHEME: "Swiftfin tvOS"
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install SwiftGen
+      run: brew install swiftgen
+
+    - name: Update Carthage
+      run: carthage update --use-xcframeworks --cache-builds
+
+    - name: Build tvOS App (Unsigned)
+      run: |
+        DERIVED_DATA="$RUNNER_TEMP/deriveddata_tvos"
+        mkdir -p "$DERIVED_DATA"
+        xcodebuild clean build \
+          -scheme "$DEFAULT_TVOS_SCHEME" \
+          -destination "generic/platform=tvOS" \
+          -sdk appletvos \
+          -skipMacroValidation \
+          -configuration Release \
+          -derivedDataPath "$DERIVED_DATA" \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          OTHER_SWIFT_FLAGS="-enable-experimental-feature IsolatedDeinit"
+
+    - name: Package tvOS IPA
+      run: |
+        DERIVED_DATA="$RUNNER_TEMP/deriveddata_tvos"
+        BUILD_DIR="$DERIVED_DATA/Build/Products/Release-appletvos"
+        APP_PATH="$BUILD_DIR/Swiftfin.app"
+
+        if [ ! -d "$APP_PATH" ]; then
+          echo "ERROR: app not found at $APP_PATH"
+          exit 1
+        fi
+
+        mkdir -p "$RUNNER_TEMP/tvos/Payload"
+        cp -R "$APP_PATH" "$RUNNER_TEMP/tvos/Payload/"
+        cd "$RUNNER_TEMP/tvos"
+        zip -r "$RUNNER_TEMP/build/tvos/Swiftfin-tvOS.ipa" Payload
+
+    - name: Upload tvOS Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Swiftfin-tvOS-IPA
+        path: ${{ runner.temp }}/build/tvos/Swiftfin-tvOS.ipa
+        retention-days: 7
