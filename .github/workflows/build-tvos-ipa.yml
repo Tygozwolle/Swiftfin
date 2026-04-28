@@ -1,0 +1,65 @@
+name: "Build tvOS App 📦"
+
+on:
+  workflow_dispatch:
+  pull_request: 
+
+jobs:
+  build:
+    name: "Build tvOS App 📦"
+    runs-on: macos-15
+    permissions:
+      contents: read
+
+    env:
+      XCODE_VERSION: "26.3"
+      SCHEME: "Swiftfin tvOS"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Install SwiftGen
+        run: brew install swiftgen
+
+      - name: Cache Carthage
+        uses: actions/cache@v4
+        with:
+          path: Carthage
+          key: ${{ runner.os }}-carthage-${{ hashFiles('**/Cartfile.resolved') }}
+          restore-keys: ${{ runner.os }}-carthage-
+
+      - name: Update Carthage
+        run: carthage update --use-xcframeworks --cache-builds
+
+      - name: Build (no code signing)
+        run: |
+          mkdir -p "$RUNNER_TEMP/DerivedData"
+          bundle exec fastlane buildIPALane \
+            scheme:"\"${{ env.SCHEME }}\"" \
+            xcodeVersion:${{ env.XCODE_VERSION }} \
+            derivedDataPath:"$RUNNER_TEMP/DerivedData"
+
+      - name: Collect built app
+        run: |
+          APP=$(find "$RUNNER_TEMP/DerivedData" -name "*.app" -path "*/Build/Products/*" | head -1)
+          echo "Found: $APP"
+          if [ -z "$APP" ]; then
+            echo "Error: No .app found in DerivedData"
+            exit 1
+          fi
+          mkdir -p /tmp/swiftfin-build
+          cp -R "$APP" /tmp/swiftfin-build/
+
+      - name: Upload app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Swiftfin-tvOS
+          path: /tmp/swiftfin-build/
+          retention-days: 7

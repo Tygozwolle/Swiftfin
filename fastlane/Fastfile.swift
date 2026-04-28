@@ -214,6 +214,56 @@ class Fastfile: LaneFile {
         )
     }
     
+    // MARK: - buildIPALane
+
+    func buildIPALane(withOptions options: [String: String]?) {
+
+        guard let options,
+              let scheme = options["scheme"]?.trimOption() else {
+            fail("missing or incorrect options")
+        }
+
+        if let xcodeVersion = options["xcodeVersion"]?.trimOption() {
+            xcodes(version: xcodeVersion)
+        }
+
+        let hasSigning = options["codeSign64"]?.trimOption() != nil &&
+                         options["profileName64"]?.trimOption() != nil
+
+        if hasSigning,
+           let codeSign64 = options["codeSign64"]?.trimOption(),
+           let profileName64 = options["profileName64"]?.trimOption() {
+
+            guard let decodedCodeSignIdentity = decodeBase64(encoded: codeSign64) else {
+                fail("code sign identity not valid base 64")
+            }
+
+            guard let profileName = decodeBase64(encoded: profileName64) else {
+                fail("profile name not valid base 64")
+            }
+
+            updateCodeSigningSettings(
+                path: swiftfinXcodeProject,
+                useAutomaticSigning: false,
+                codeSignIdentity: .userDefined(decodedCodeSignIdentity),
+                profileName: .userDefined(profileName),
+                bundleIdentifier: .userDefined(swiftfinBundleIdentifier)
+            )
+        }
+
+        let derivedDataPath = options["derivedDataPath"]?.trimOption()
+
+        buildApp(
+            scheme: .userDefined(scheme),
+            exportMethod: .userDefined("development"),
+            derivedDataPath: derivedDataPath.map { .userDefined($0) } ?? .fastlaneDefault(nil),
+            skipArchive: .userDefined(!hasSigning),
+            skipCodesigning: .userDefined(!hasSigning),
+            xcargs: .userDefined("-skipMacroValidation"),
+            skipProfileDetection: true
+        )
+    }
+
     // MARK: - buildLane
     
     func buildLane(withOptions options: [String: String]?) {
