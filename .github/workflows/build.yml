@@ -15,11 +15,11 @@ jobs:
       - name: Build for Simulator
         run: |
           xcodebuild -scheme Swiftfin \
-                     -sdk iphonesimulator \
                      -configuration Debug \
                      -destination 'platform=iOS Simulator,name=iPhone 16' \
                      -derivedDataPath build \
                      CODE_SIGNING_ALLOWED=NO \
+                     BUILD_ACTIVE_ARCH_ONLY=NO \
                      build
 
       - name: Upload Artifact
