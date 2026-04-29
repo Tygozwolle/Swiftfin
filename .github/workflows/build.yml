@@ -16,11 +16,11 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_16.1.app/Contents/Developer
 
       - name: Resolve Package Dependencies
-        run: xcodebuild -resolvePackageDependencies -scheme Swiftfin CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO
+        run: xcodebuild -resolvePackageDependencies -scheme Swiftfin SWIFT_MACROS_ENABLED=YES CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO
 
       - name: Build for Simulator
         run: |
-          xcodebuild -scheme Swiftfin -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 16' -derivedDataPath build CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO BUILD_ACTIVE_ARCH_ONLY=NO SWIFT_MACROS_ENABLED=YES -sdk iphonesimulator build
+          xcodebuild -scheme Swiftfin -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 16' CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO BUILD_ACTIVE_ARCH_ONLY=NO SWIFT_MACROS_ENABLED=YES -sdk iphonesimulator build
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
