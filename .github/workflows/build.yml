@@ -20,7 +20,7 @@ jobs:
 
       - name: Build for Simulator
         run: |
-          xcodebuild -scheme Swiftfin -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 16' -derivedDataPath build CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO BUILD_ACTIVE_ARCH_ONLY=NO OTHER_SWIFT_FLAGS="-Xfrontend -enable-experimental-macros" -sdk iphonesimulator build
+          xcodebuild -scheme Swiftfin -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 16' CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO BUILD_ACTIVE_ARCH_ONLY=NO -sdk iphonesimulator build
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
