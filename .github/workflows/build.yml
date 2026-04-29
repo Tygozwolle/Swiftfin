@@ -7,17 +7,19 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Resolve Package Dependencies
-        run: xcodebuild -resolvePackageDependencies
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.1.app/Contents/Developer
 
       - name: Build for Simulator
+        env:
+          SWIFT_MACROS_ENABLED: YES
         run: |
-          xcodebuild -scheme Swiftfin -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 16,arch=arm64' -derivedDataPath build CODE_SIGNING_REQUIRED=NO BUILD_ACTIVE_ARCH_ONLY=NO SWIFT_MACROS_ENABLED=1 OTHER_SWIFT_FLAGS="-Xfrontend -enable-swift-macros" -sdk iphonesimulator build
+          xcodebuild -scheme Swiftfin -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 16' -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO BUILD_ACTIVE_ARCH_ONLY=NO SWIFT_MACROS_ENABLED=YES OTHER_SWIFT_FLAGS="-Xfrontend -enable-swift-macros" -sdk iphonesimulator build
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
