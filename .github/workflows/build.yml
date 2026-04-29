@@ -9,8 +9,8 @@ jobs:
   build:
     runs-on: macos-14
     env:
-      SWIFT_MACROS_ENABLED: YES
-      ENABLE_SWIFT_MACROS: YES
+      SWIFT_MACROS_ENABLED: 1
+      ENABLE_SWIFT_MACROS: 1
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -19,11 +19,11 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_16.1.app/Contents/Developer
 
       - name: Resolve Package Dependencies
-        run: xcodebuild -resolvePackageDependencies -scheme Swiftfin SWIFT_MACROS_ENABLED=YES ENABLE_SWIFT_MACROS=YES CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO
+        run: xcodebuild -resolvePackageDependencies -scheme Swiftfin CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO
 
       - name: Build for Simulator
         run: |
-          xcodebuild -scheme Swiftfin -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 16' SWIFT_MACROS_ENABLED=YES ENABLE_SWIFT_MACROS=YES CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO BUILD_ACTIVE_ARCH_ONLY=YES -sdk iphonesimulator build
+          xcodebuild -scheme Swiftfin -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 16' SWIFT_MACROS_ENABLED=1 ENABLE_SWIFT_MACROS=1 OTHER_SWIFT_FLAGS="-Xfrontend -enable-swift-macros" CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO BUILD_ACTIVE_ARCH_ONLY=YES -sdk iphonesimulator build
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
